@@ -35,8 +35,10 @@ interface TestType {
   vetFluxUserInfo: string;
 }
 
-// Calendar에서 다른 Week으로 이동했을 때, 선택일을 해당 Week에서 선택하면(즉 WeekData가 변경되지 않으면), Calendar 화면이 업데이트 되지 않음
-// DatePicker의 선택 날짜가 전체의 선택일은 변경 시키지만, 외부의 선택으로는 DatePicker의 선택일이 변경되지 않음
+// Calendar에서 다른 Week으로 이동했을 때, 선택일을 해당 Week에서 선택하면(즉 WeekData가 변경되지 않으면), Calendar 화면이 업데이트 되지 않음 -> 해결
+// DatePicker의 선택 날짜가 전체의 선택일은 변경 시키지만, 외부의 선택으로는 DatePicker의 선택일이 변경되지 않음 -> 해결
+//추가 이슈 - 화살표 클릭시 weekdata 불러와지지 않음 -> 주 단위만 가져올 수 있도록 변경, 기준일이 아니라 시작일 기준으로 주 데이터 가져오도록 변경
+
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [dailyData, setDailyData] = useState<DailyDataType[]>([]);
@@ -81,7 +83,8 @@ export default function Home() {
   //선택일이 Week 데이터의 밖에 있었을 때, Start/End Date가 변경되고, 그 때 실행되는 useEffect
   //선택일 기준으로 한 Week의 데이터를 받아와서 WeeklyData에 저장한다.
   useEffect(() => {
-    const weekly = firestore.collection("hospital").doc("8owQXXXfuCJnix7uSkqr").collection("Reservation").where("eventDate", ">=", dayjs(selectedDate).startOf("week").valueOf()).where("eventDate", "<=", dayjs(selectedDate).endOf("week").valueOf());
+    console.log("왜 안바껴? 스타트 데이 바뀌잖아");
+    const weekly = firestore.collection("hospital").doc("8owQXXXfuCJnix7uSkqr").collection("Reservation").where("eventDate", ">=", dayjs(startDate).startOf("week").valueOf()).where("eventDate", "<=", dayjs(startDate).endOf("week").valueOf());
 
     const unsubscribe = weekly.onSnapshot((docs) => {
       setWeeklyData([]);
@@ -154,11 +157,16 @@ export default function Home() {
 
   // 앞,뒤 화살표 버튼 클릭 시 Week 이동
   const moveWeek = (name: string) => {
+    console.log("before_start", dayjs(startDate).date());
     if (name === "back") {
+      setStartDate(dayjs(startDate).subtract(7, "day").valueOf());
+      setEndDate(dayjs(endDate).subtract(7, "day").valueOf());
       setDays((days: any[]) => {
         return days.map((day) => day.subtract(7, "day"));
       });
     } else if (name === "front") {
+      setStartDate(dayjs(startDate).add(7, "day").valueOf());
+      setEndDate(dayjs(endDate).add(7, "day").valueOf());
       setDays((days: any[]) => {
         return days.map((day) => day.add(7, "day"));
       });
@@ -187,4 +195,3 @@ export default function Home() {
     </div>
   );
 }
-
